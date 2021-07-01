@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -53,7 +54,7 @@ public class NftContractFlow {
         //String csHash = registeredAuthor();
 
         //新建品牌
-        String csHash = registeredBrand();
+        //String csHash = registeredBrand();
         //铸造
         //String csHash = createCommodity();
 
@@ -67,12 +68,11 @@ public class NftContractFlow {
         //String csHash = balanceOf();
 
         //根据token Id查询owner
-        //String csHash = ownerOf();
+        ownerOf();
 
-
-        queryResult(csHash);
+        //queryResult(csHash);
         //解析合约返回值
-        showOutPut(csHash);
+        //showOutPut(csHash);
     }
 
     //部署Solidity合约 也可以通过Cloud Ide进行部署
@@ -164,7 +164,7 @@ public class NftContractFlow {
                 tenantid(restClientProperties.getTenantid()).
                 orderId("order_" + System.currentTimeMillis()).
                 vmTypeEnum(VMTypeEnum.EVM).content(new String(content)).
-                abi("[\"bool\"]").                                      //TODO 合约返回值类型需自己根据合约修改
+                abi("[\"identity\"]").                                      //TODO 合约返回值类型需自己根据合约修改
                 mykmsKeyId(restClientProperties.getKmsId()).build();    //TODO 默认为application.yaml中KmsId
         BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
         assert (baseResp.isSuccess());
@@ -389,9 +389,7 @@ public class NftContractFlow {
         return clientParam.getHash();
     }
 
-    /*
 
-    */
     /*
     功能说明:根据tokenId查找owner
     输入参数:
@@ -399,7 +397,7 @@ public class NftContractFlow {
     返回值:
              owner:identity
     */
-    public String ownerOf() throws Exception {
+    public void ownerOf() throws Exception {
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(2);
 
@@ -415,8 +413,11 @@ public class NftContractFlow {
         BaseResp resp = restClient.chainCall(clientParam.getHash(), clientParam.getSignData(), Method.CALLCONTRACT);
         System.out.println("[ownerOf CallContract-调用合约] Hash: " + clientParam.getHash() + "    Result:" + resp);
 
-        showOutPut(clientParam.getHash());
-        return clientParam.getHash();
+
+
+
     }
+
+
 
 }

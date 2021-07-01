@@ -21,6 +21,9 @@ public class DemoFlowRunner implements CommandLineRunner {
     NftContractFlow nftContractFlow;
 
     @Autowired
+    NftContractFlowASync nftContractFlowASync;
+
+    @Autowired
     DepositFlowforkms depositFlowforkms;
 
     @Autowired
@@ -36,7 +39,16 @@ public class DemoFlowRunner implements CommandLineRunner {
     QueryChainData queryChainData;
     public void run(String... strings) throws Exception {
 
-        nftContractFlow.runFlow();
+        /*
+        nft同步测试
+         */
+        //nftContractFlow.runFlow();
+
+        /*
+        nft异步测试
+         */
+        nftContractFlowASync.runFlow();
+
         /**
          * 执行存证场景下操作流（密钥非托管账户）
          */
