@@ -63,13 +63,13 @@ public class NftContractFlowASync {
         //新建品牌
         //String csHash = registeredBrand();
         //铸造
-        //String csHash = createCommodity();
+        String csHash = createCommodity();
 
         //挂售
         //String csHash = createOrder();
 
         //购买
-        String csHash = buyOneNoFee();
+        //String csHash = buyOneNoFee();
 
         //查询指定账户的nft数目
         //String csHash = balanceOf();
@@ -283,7 +283,7 @@ public class NftContractFlowASync {
 
     public String createCommodity() throws Exception {
         JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(11));
+        jsonArray.add(BigInteger.valueOf(12));
         jsonArray.add(BigInteger.valueOf(2));
         jsonArray.add(new Identity("be8785e54d8c4c6f265ab7628099491c7deaf6c8d80459f3ad11881aa92bea46"));
         jsonArray.add("music 1");
@@ -320,8 +320,18 @@ public class NftContractFlowASync {
 
             if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
                 ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
+                Integer validLogNum = 0;
                 for (LogEntry log : transaction.getLogs()) {
                     if (log.getLogData().length > 0) {
+                        validLogNum++;
+                    }
+                }
+                System.out.println("createOrder log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
+
+                validLogNum = 0;
+                for (LogEntry log : transaction.getLogs()) {
+                    if (log.getLogData().length > 0) {
+                       
                         //传入回执中的logdata转换为EVMoutput
                         System.out.println("createCommodity query receipt successful " + JSONObject.toJSONString(baseResp));
                         EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
@@ -362,7 +372,7 @@ public class NftContractFlowASync {
     public String createOrder() throws Exception {
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(BigInteger.valueOf(11));
-        jsonArray.add(BigInteger.valueOf(100));
+        jsonArray.add(BigInteger.valueOf(110));
         jsonArray.add(BigInteger.valueOf(20));
         jsonArray.add(new Identity("0xe8639b12b0f2f59fe4bb52380abd7f6d578fba27035cc7f628f6de99838c3a3e")); //erc20 contract address
 
@@ -452,9 +462,9 @@ public class NftContractFlowASync {
     public String buyOneNoFee() throws Exception {
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(BigInteger.valueOf(5));
-        jsonArray.add(BigInteger.valueOf(2));
+        jsonArray.add(BigInteger.valueOf(3));
 
-        /*
+
         String orderId = "order_" + System.currentTimeMillis();
         CallRestBizParam callRestBizParam = CallRestBizParam.builder()
                 .orderId(orderId)
@@ -469,17 +479,19 @@ public class NftContractFlowASync {
                 .tenantid(restClientProperties.getTenantid())
                 .gas(1000000L).build();
         BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
-*/
 
 
+        /*
         BaseResp baseResp = new BaseResp();
         baseResp.setCode("200");
         baseResp.setData("e2b08b023b53eb17d2c21b11daec1d1e66ff9d96848038b0cb3244819dceabb7");
         baseResp.setSuccess(true);
+        */
 
 
         System.out.println("buyOneNoFee " + JSONObject.toJSONString(baseResp));
         if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
             String hash = baseResp.getData();
             BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
             String s = queryBaseResp.getData();
@@ -561,6 +573,7 @@ public class NftContractFlowASync {
 
         //System.out.println(JSONObject.toJSONString(baseResp));
         if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
             String hash = baseResp.getData();
             BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
             String s = queryBaseResp.getData();
@@ -626,6 +639,7 @@ public class NftContractFlowASync {
 
         //System.out.println(JSONObject.toJSONString(baseResp));
         if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
             String hash = baseResp.getData();
             BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
             String s = queryBaseResp.getData();
