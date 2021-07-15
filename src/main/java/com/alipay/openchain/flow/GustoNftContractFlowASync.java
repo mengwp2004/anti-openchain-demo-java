@@ -46,7 +46,9 @@ public class GustoNftContractFlowASync {
     private static final String COMMODITY_CONTRACT_NAME = "media";
     private static final String SUPPER_MARKET_CONTRACT_NAME = "mediaMarket1";
     private static final String NFT_721_CONTRACT_NAME = "gustoNft";
-
+    private static final String RENT_CONTRACT_NAME = "rent2";
+    private static final String NFT_CONTRACT_NAME = "gustoNft1";
+    
     @Autowired
     private RestClient restClient;
 
@@ -59,7 +61,7 @@ public class GustoNftContractFlowASync {
         //String csHash = mintMedia();
 
         //购买
-        String csHash = saleOneTo();
+        //String csHash = saleOneTo();
 
         //查询指定账户的nft数目
         //String csHash = balanceOf();
@@ -67,9 +69,18 @@ public class GustoNftContractFlowASync {
         //根据token Id查询owner
         //ownerOf();
 
+        //添加租赁人
+        //addRent();
+
+        //去除租赁人
+        removeRent();
+
         //queryResult(csHash);
         //解析合约返回值
         //showOutPut(csHash);
+
+
+
     }
 
     //部署Solidity合约 也可以通过Cloud Ide进行部署
@@ -226,15 +237,7 @@ public class GustoNftContractFlowASync {
 
             if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
                 ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
-                Integer validLogNum = 0;
-                for (LogEntry log : transaction.getLogs()) {
-                    if (log.getLogData().length > 0) {
-                        validLogNum++;
-                    }
-                }
-                System.out.println("mintMedia log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
 
-                validLogNum = 0;
                 for (LogEntry log : transaction.getLogs()) {
                     if (log.getLogData().length > 0) {
 
@@ -313,23 +316,10 @@ public class GustoNftContractFlowASync {
             if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
                 ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
 
-                Integer validLogNum = 0;
-                for (LogEntry log : transaction.getLogs()) {
-                    if (log.getLogData().length > 0) {
-                        validLogNum++;
-                    }
-                }
-                System.out.println("saleOneTo log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
-
-                validLogNum = 0;
-
                 for (LogEntry log : transaction.getLogs()) {
 
                     if (log.getLogData().length > 0) {
-                        if(validLogNum == 0){
-                            validLogNum ++;
-                            //continue;
-                        }
+
                         //传入回执中的logdata转换为EVMoutput
                         System.out.println("saleOneTo query receipt successful " + JSONObject.toJSONString(baseResp));
                         EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
@@ -489,6 +479,145 @@ public class GustoNftContractFlowASync {
 
 
     }
+
+
+    /*
+    功能说明:添加租赁人
+    输入参数:
+               _tokenId:uint256
+               _to:identity
+    事件:
+               AddRent( _tokenID, _to);
+   */
+    public String addRent() throws Exception {
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.add(BigInteger.valueOf(1));
+        jsonArray.add(new Identity("0bdaeaefe144a0eee2e11cf1030d7607a9c53abaf4606db55d3053029dd6bda9"));
+
+        String orderId = "order_" + System.currentTimeMillis();
+        CallRestBizParam callRestBizParam = CallRestBizParam.builder()
+                .orderId(orderId)
+                .bizid(restClientProperties.getBizid())
+                .account("gustoUser2")
+                .contractName(RENT_CONTRACT_NAME)
+                .methodSignature("addRent(uint256,identity)")
+                .inputParamListStr(jsonArray.toJSONString())
+                .outTypes("void")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
+                .method(Method.CALLCONTRACTBIZASYNC)
+                .tenantid(restClientProperties.getTenantid())
+                .gas(1000000L).build();
+        BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
+
+        System.out.println("addRent " + JSONObject.toJSONString(baseResp));
+        if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
+            String hash = baseResp.getData();
+            BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
+            String s = queryBaseResp.getData();
+
+            if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
+                ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
+
+                for (LogEntry log : transaction.getLogs()) {
+
+                    if (log.getLogData().length > 0) {
+
+                        //传入回执中的logdata转换为EVMoutput
+                        System.out.println("addRent query receipt successful " + JSONObject.toJSONString(baseResp));
+                        EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
+                        //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
+                        List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
+                                asList("uint256", "identity"));
+                        for (Object o : resultList) {
+                            System.out.println("addRent  param:" + o.toString());
+                        }
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("addRent query receipt error " + JSONObject.toJSONString(queryBaseResp));
+                if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
+                    System.out.println("addRent  alread   " + JSONObject.toJSONString(queryBaseResp));
+                }
+            }
+            return null;
+        } else {
+            System.out.println("addRent call error " + JSONObject.toJSONString(baseResp));
+            return null;
+        }
+
+    }
+
+
+    /*
+    功能说明:添加租赁人
+    输入参数:
+               _tokenId:uint256
+               _to:identity
+    事件:
+               RemoveRent( _tokenID, _to);
+   */
+    public String removeRent() throws Exception {
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.add(BigInteger.valueOf(1));
+        jsonArray.add(new Identity("0bdaeaefe144a0eee2e11cf1030d7607a9c53abaf4606db55d3053029dd6bda9"));
+
+        String orderId = "order_" + System.currentTimeMillis();
+        CallRestBizParam callRestBizParam = CallRestBizParam.builder()
+                .orderId(orderId)
+                .bizid(restClientProperties.getBizid())
+                .account("gustoUser2")
+                .contractName(RENT_CONTRACT_NAME)
+                .methodSignature("removeRent(uint256,identity)")
+                .inputParamListStr(jsonArray.toJSONString())
+                .outTypes("void")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
+                .method(Method.CALLCONTRACTBIZASYNC)
+                .tenantid(restClientProperties.getTenantid())
+                .gas(1000000L).build();
+        BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
+
+        System.out.println("removeRent " + JSONObject.toJSONString(baseResp));
+        if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
+            String hash = baseResp.getData();
+            BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
+            String s = queryBaseResp.getData();
+
+            if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
+                ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
+
+                for (LogEntry log : transaction.getLogs()) {
+
+                    if (log.getLogData().length > 0) {
+
+                        //传入回执中的logdata转换为EVMoutput
+                        System.out.println("removeRent query receipt successful " + JSONObject.toJSONString(baseResp));
+                        EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
+                        //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
+                        List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
+                                asList("uint256", "identity"));
+                        for (Object o : resultList) {
+                            System.out.println("removeRent  param:" + o.toString());
+                        }
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("removeRent query receipt error " + JSONObject.toJSONString(queryBaseResp));
+                if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
+                    System.out.println("removeRent  alread   " + JSONObject.toJSONString(queryBaseResp));
+                }
+            }
+            return null;
+        } else {
+            System.out.println("removeRent call error " + JSONObject.toJSONString(baseResp));
+            return null;
+        }
+
+    }
+
 
 
 }
