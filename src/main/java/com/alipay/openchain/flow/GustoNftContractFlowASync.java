@@ -39,15 +39,13 @@ import static java.util.Arrays.asList;
  * 合约相关场景下操作流，示例代码提供
  */
 @Service
-public class NftContractFlowASync {
+public class GustoNftContractFlowASync {
     //private static final String CONTRACT_NAME = "gusto_bluesky_assert2"; // mengwp_2012账号　
-    private static final String CONTRACT_NAME = "gusto_nft_test1"; // mengwp_2012账号　
+    private static final String CONTRACT_NAME = "gustoUser2"; // mengwp_2012账号　
 
-    private static final String COMMODITY_CONTRACT_NAME = "commodity10";
-    private static final String SUPPER_MARKET_CONTRACT_NAME = "supper16";
-    private static final String AUTHOR_CONTRACT_NAME = "Author2";
-    private static final String BRAND_CONTRACT_NAME = "Brand2";
-    private static final String NFT_721_CONTRACT_NAME = "SNFT11";
+    private static final String COMMODITY_CONTRACT_NAME = "media";
+    private static final String SUPPER_MARKET_CONTRACT_NAME = "mediaMarket1";
+    private static final String NFT_721_CONTRACT_NAME = "gustoNft";
 
     @Autowired
     private RestClient restClient;
@@ -57,19 +55,11 @@ public class NftContractFlowASync {
 
     public void runFlow() throws Exception {
 
-        //新建作者
-        //String csHash = registeredAuthor();
-
-        //新建品牌
-        //String csHash = registeredBrand();
         //铸造
-        String csHash = createCommodity();
-
-        //挂售
-        //String csHash = createOrder();
+        //String csHash = mintMedia();
 
         //购买
-        //String csHash = buyOneNoFee();
+        String csHash = saleOneTo();
 
         //查询指定账户的nft数目
         //String csHash = balanceOf();
@@ -84,7 +74,7 @@ public class NftContractFlowASync {
 
     //部署Solidity合约 也可以通过Cloud Ide进行部署
     public String deploySolidityContract() throws Exception {
-        String path = NftContractFlowASync.class.getClassLoader().getResource("contract.txt").getPath();
+        String path = GustoNftContractFlowASync.class.getClassLoader().getResource("contract.txt").getPath();
         byte[] creditBytes = FileUtils.readFileToByteArray(new File(path));
         String hexString = new String(creditBytes);
         System.out.println("文件" + hexString);
@@ -179,71 +169,6 @@ public class NftContractFlowASync {
         return baseResp;
     }
 
-    /*
-    功能说明:新建作者
-    输入参数:
-               _author:identity
-               _url:string
-               _name:string
-               _introduction:string
-    事件:
-
-   */
-    public String registeredAuthor() throws Exception {
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.add(new Identity("4b61cd266a5d6ce40ddec2e43ef75c1aadc5cedb113da980802ebec4532d1e5f"));
-        jsonArray.add("url");
-        jsonArray.add("gusto user2");
-        jsonArray.add("gusto user2 desc ");
-        ClientParam clientParam = restClient.createCallContractTransaction(
-                restClientProperties.getDefaultAccount(),
-                AUTHOR_CONTRACT_NAME,                          //合约名  可以修改为cloud ide中部署的合约名
-                "",                             //合约返回值类型
-                "registeredAuthor(identity,string,string,string)",
-                jsonArray.toJSONString(),
-                false,
-                null,
-                1000000L);
-        BaseResp resp = restClient.chainCall(clientParam.getHash(), clientParam.getSignData(), Method.CALLCONTRACT);
-        System.out.println("[registeredAuthor CallContract-调用合约] Hash: " + clientParam.getHash() + "    Result:" + resp);
-        return clientParam.getHash();
-    }
-
-    /*
-      功能说明:新建品牌
-      输入参数:
-               _bID:uint256
-               _description:string
-               _feeToken:identity   //要求是代币合约地址或1,1 代币使用链的币
-               _fee:uint256
-               _name:string
-
-      事件:
-               RegisteredBrand(_bID,_description,_feeToken,_fee,_name);
-
-
-    */
-    public String registeredBrand() throws Exception {
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(3));
-        jsonArray.add("brand 3 desc");
-        jsonArray.add(new Identity("0xe8639b12b0f2f59fe4bb52380abd7f6d578fba27035cc7f628f6de99838c3a3e"));
-        jsonArray.add(BigInteger.valueOf(5));
-
-        jsonArray.add("brand 3 ");
-        ClientParam clientParam = restClient.createCallContractTransaction(
-                restClientProperties.getDefaultAccount(),
-                BRAND_CONTRACT_NAME,                          //合约名  可以修改为cloud ide中部署的合约名
-                "",                             //合约返回值类型
-                "registeredBrand(uint256,string,identity,uint256,string)",
-                jsonArray.toJSONString(),
-                false,
-                null,
-                1000000L);
-        BaseResp resp = restClient.chainCall(clientParam.getHash(), clientParam.getSignData(), Method.CALLCONTRACT);
-        System.out.println("[registeredAuthor CallContract-调用合约] Hash: " + clientParam.getHash() + "    Result:" + resp);
-        return clientParam.getHash();
-    }
 
     //调用Solidity合约
     //合约方法签名  注意：1.中间不要带空格  2.只写参数类型,不要带参数名 如:uint256 a,uint256 b  3.参数类型填写争取  请不要填写如int  需要填写完整uint
@@ -251,68 +176,49 @@ public class NftContractFlowASync {
       功能说明:铸造
       输入参数:
                 cid:uint256
-                _bId:uint256
                 _author:identity
                 _name:string
                 _pDescription:string
                 _url:string
-                _cAttributeS1:string,
-                _cAttributeS2:string,
-                _cAttributeU:uint256[]
                 _totalSupply:uint256
-                _authorFeeRate:uint256
       事件:
 
-            1  CreateCommodity(
+            MintMedia(
             _cid,
-            _bID,
             _name,
             _author,
             _pDescription,
             _url,
-            _cAttributeS1:string,
-            _cAttributeS2:string,
-            _cAttributeU,
-            _totalSupply,
-            _authorFeeRate
+            _totalSupply
             );
-
-            2  CommidityStateChange(_cid,commodity[_cid].cState);
 
     */
 
-    public String createCommodity() throws Exception {
+    public String mintMedia() throws Exception {
         JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(12));
-        jsonArray.add(BigInteger.valueOf(2));
+        jsonArray.add(BigInteger.valueOf(3));
         jsonArray.add(new Identity("be8785e54d8c4c6f265ab7628099491c7deaf6c8d80459f3ad11881aa92bea46"));
         jsonArray.add("music 1");
         jsonArray.add("music desc");
         jsonArray.add("https://");
-        jsonArray.add(""); // 只能空，蚂蚁链合约限制
-        jsonArray.add(""); // 只能空，蚂蚁链合约限制
-        ArrayList<BigInteger> attrU = new ArrayList<BigInteger>();
-        attrU.add(BigInteger.valueOf(1));
-        jsonArray.add(attrU);
         jsonArray.add(1000);
-        jsonArray.add(0);
 
         String orderId = "order_" + System.currentTimeMillis();
         CallRestBizParam callRestBizParam = CallRestBizParam.builder()
                 .orderId(orderId)
                 .bizid(restClientProperties.getBizid())
-                .account("gusto_test1")
+                .account("gustoUser2")
                 .contractName(COMMODITY_CONTRACT_NAME)
-                .methodSignature("createCommodity(uint256,uint256,identity,string,string,string,string,string,uint256[],uint256,uint256)")
+                .methodSignature("mintMedia(uint256,identity,string,string,string,uint256)")
                 .inputParamListStr(jsonArray.toJSONString())
                 .outTypes("void")
-                .mykmsKeyId("Il726LGGKGPAQENO1624004353911")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
                 .method(Method.CALLCONTRACTBIZASYNC)
                 .tenantid(restClientProperties.getTenantid())
                 .gas(1000000L).build();
         BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
 
-        System.out.println("createCommodity " + JSONObject.toJSONString(baseResp));
+        System.out.println("mintMedia " + JSONObject.toJSONString(baseResp));
         if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
             String hash = baseResp.getData();
             BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
@@ -326,155 +232,63 @@ public class NftContractFlowASync {
                         validLogNum++;
                     }
                 }
-                System.out.println("createOrder log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
+                System.out.println("mintMedia log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
 
                 validLogNum = 0;
                 for (LogEntry log : transaction.getLogs()) {
                     if (log.getLogData().length > 0) {
 
                         //传入回执中的logdata转换为EVMoutput
-                        System.out.println("createCommodity query receipt successful " + JSONObject.toJSONString(baseResp));
+                        System.out.println("mintMedia query receipt successful " + JSONObject.toJSONString(baseResp));
                         EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
                         //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
                         List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
-                                asList("uint256", "uint256", "string", "identity", "string", "string", "string", "string", "uint256[]", "uint256", "uint256"));
+                                asList( "uint256", "string", "identity", "string", "string", "uint256"));
                         for (Object o : resultList) {
-                            System.out.println("createCommodity  param:" + o.toString());
+                            System.out.println("mintMedia  param:" + o.toString());
                         }
                         break;
                     }
                 }
             } else {
-                System.out.println("createCommodity query receipt error " + JSONObject.toJSONString(baseResp));
+                System.out.println("mintMedia query receipt error " + JSONObject.toJSONString(baseResp));
                 if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
-                    System.out.println("createCommodity  alread create commodity  " + JSONObject.toJSONString(queryBaseResp));
+                    System.out.println("mintMedia  alread create media  " + JSONObject.toJSONString(queryBaseResp));
                 }
             }
             return null;
         } else {
-            System.out.println("createCommodity call error " + JSONObject.toJSONString(baseResp));
+            System.out.println("mintMedia call error " + JSONObject.toJSONString(baseResp));
             return null;
         }
-
-
     }
 
-    /*
-     功能说明:商家挂售
-     输入参数:
-               _cid:uint256
-               _startTime:uint256
-               _price:uint256
-               _reciveToken:identity
-     事件:
-               CreateOrder(_cid,_startTime,_price,_reciveToken);
-   */
-    public String createOrder() throws Exception {
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(11));
-        jsonArray.add(BigInteger.valueOf(110));
-        jsonArray.add(BigInteger.valueOf(20));
-        jsonArray.add(new Identity("0xe8639b12b0f2f59fe4bb52380abd7f6d578fba27035cc7f628f6de99838c3a3e")); //erc20 contract address
-
-        String orderId = "order_" + System.currentTimeMillis();
-        CallRestBizParam callRestBizParam = CallRestBizParam.builder()
-                .orderId(orderId)
-                .bizid(restClientProperties.getBizid())
-                .account("gusto_test1")
-                .contractName(SUPPER_MARKET_CONTRACT_NAME)
-                .methodSignature("createOrder(uint256,uint256,uint256,identity)")
-                .inputParamListStr(jsonArray.toJSONString())
-                .outTypes("void")
-                .mykmsKeyId("Il726LGGKGPAQENO1624004353911")
-                .method(Method.CALLCONTRACTBIZASYNC)
-                .tenantid(restClientProperties.getTenantid())
-                .gas(1000000L).build();
-        BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
-
-
- /*
-        BaseResp baseResp = new BaseResp();
-        baseResp.setCode("200");
-        baseResp.setData("8bd979cea88e8b207607ae195d00d1ee03a1ee14aae3cf3149b92f76a733d97f");
-        baseResp.setSuccess(true);
-*/
-
-        System.out.println("createOrder " + JSONObject.toJSONString(baseResp));
-        if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
-            String hash = baseResp.getData();
-            BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
-            String s = queryBaseResp.getData();
-
-            if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
-                ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
-
-                Integer validLogNum = 0;
-                for (LogEntry log : transaction.getLogs()) {
-                    if (log.getLogData().length > 0) {
-                        validLogNum++;
-                    }
-                }
-                System.out.println("createOrder log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
-
-                validLogNum = 0;
-
-                for (LogEntry log : transaction.getLogs()) {
-
-                    if (log.getLogData().length > 0) {
-                        if(validLogNum == 0){
-                            validLogNum ++;
-                            continue;
-                        }
-                        //传入回执中的logdata转换为EVMoutput
-                        System.out.println("createOrder query receipt successful " + JSONObject.toJSONString(baseResp));
-                        EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
-                        //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
-                        List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
-                                asList("uint256", "uint256", "uint256", "identity"));
-                        for (Object o : resultList) {
-                            System.out.println("createOrder CreateOrder param:" + o.toString());
-                        }
-                        break;
-                    }
-                }
-            } else {
-                System.out.println("createOrder query receipt error " + JSONObject.toJSONString(queryBaseResp));
-                if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
-                    System.out.println("createOrder  alread create commodity  " + JSONObject.toJSONString(queryBaseResp));
-                }
-            }
-            return null;
-        } else {
-            System.out.println("createOrder call error " + JSONObject.toJSONString(baseResp));
-            return null;
-        }
-
-    }
 
     /*
     功能说明:客户买入
     输入参数:
                _cid:uint256
                _sid:uint256
+               _to:identity
     事件:
-               BuyOne( _cid, _sid, _tokenID, msg.sender);
+               SaleOneTo( _cid, _sid, _tokenID, msg.sender);
    */
-    public String buyOneNoFee() throws Exception {
+    public String saleOneTo() throws Exception {
         JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(5));
         jsonArray.add(BigInteger.valueOf(3));
-
+        jsonArray.add(BigInteger.valueOf(1));
+        jsonArray.add(new Identity("0bdaeaefe144a0eee2e11cf1030d7607a9c53abaf4606db55d3053029dd6bda9"));
 
         String orderId = "order_" + System.currentTimeMillis();
         CallRestBizParam callRestBizParam = CallRestBizParam.builder()
                 .orderId(orderId)
                 .bizid(restClientProperties.getBizid())
-                .account("gusto_test1")
+                .account("gustoUser2")
                 .contractName(SUPPER_MARKET_CONTRACT_NAME)
-                .methodSignature("buyOneNoFee(uint256,uint256)")
+                .methodSignature("saleOneTo(uint256,uint256,identity)")
                 .inputParamListStr(jsonArray.toJSONString())
                 .outTypes("void")
-                .mykmsKeyId("Il726LGGKGPAQENO1624004353911")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
                 .method(Method.CALLCONTRACTBIZASYNC)
                 .tenantid(restClientProperties.getTenantid())
                 .gas(1000000L).build();
@@ -489,7 +303,7 @@ public class NftContractFlowASync {
         */
 
 
-        System.out.println("buyOneNoFee " + JSONObject.toJSONString(baseResp));
+        System.out.println("saleOneTo " + JSONObject.toJSONString(baseResp));
         if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
             Thread.sleep(3000);
             String hash = baseResp.getData();
@@ -505,7 +319,7 @@ public class NftContractFlowASync {
                         validLogNum++;
                     }
                 }
-                System.out.println("buyOneNoFee log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
+                System.out.println("saleOneTo log size=" + transaction.getLogs().size() + " valid log size=" + validLogNum);
 
                 validLogNum = 0;
 
@@ -517,26 +331,26 @@ public class NftContractFlowASync {
                             //continue;
                         }
                         //传入回执中的logdata转换为EVMoutput
-                        System.out.println("buyOneNoFee query receipt successful " + JSONObject.toJSONString(baseResp));
+                        System.out.println("saleOneTo query receipt successful " + JSONObject.toJSONString(baseResp));
                         EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
                         //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
                         List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
                                 asList("uint256", "uint256", "uint256", "identity"));
                         for (Object o : resultList) {
-                            System.out.println("buyOneNoFee buyOne param:" + o.toString());
+                            System.out.println("saleOneTo buyOne param:" + o.toString());
                         }
                         break;
                     }
                 }
             } else {
-                System.out.println("buyOneNoFee query receipt error " + JSONObject.toJSONString(queryBaseResp));
+                System.out.println("saleOneTo query receipt error " + JSONObject.toJSONString(queryBaseResp));
                 if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
-                    System.out.println("buyOneNoFee  alread create commodity  " + JSONObject.toJSONString(queryBaseResp));
+                    System.out.println("buyOneNoFee  alread   " + JSONObject.toJSONString(queryBaseResp));
                 }
             }
             return null;
         } else {
-            System.out.println("buyOneNoFee call error " + JSONObject.toJSONString(baseResp));
+            System.out.println("saleOneTo call error " + JSONObject.toJSONString(baseResp));
             return null;
         }
 

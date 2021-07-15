@@ -36,6 +36,9 @@ public class DemoFlowRunner implements CommandLineRunner {
     OperateChainAccount operateChainAccount;
 
     @Autowired
+    GustoNftContractFlowASync gustoNftContractFlowASync;
+
+    @Autowired
     QueryChainData queryChainData;
     public void run(String... strings) throws Exception {
 
@@ -47,7 +50,7 @@ public class DemoFlowRunner implements CommandLineRunner {
         /*
         nft异步测试
          */
-        nftContractFlowASync.runFlow();
+        gustoNftContractFlowASync.runFlow();
 
         /**
          * 执行存证场景下操作流（密钥非托管账户）
