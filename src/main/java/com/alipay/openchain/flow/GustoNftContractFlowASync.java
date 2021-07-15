@@ -48,7 +48,7 @@ public class GustoNftContractFlowASync {
     private static final String NFT_721_CONTRACT_NAME = "gustoNft";
     private static final String RENT_CONTRACT_NAME = "rent2";
     private static final String NFT_CONTRACT_NAME = "gustoNft1";
-    
+
     @Autowired
     private RestClient restClient;
 
@@ -59,6 +59,9 @@ public class GustoNftContractFlowASync {
 
         //铸造
         //String csHash = mintMedia();
+
+        //注销，只有没有卖的nft才可以注销
+        burnMedia();
 
         //购买
         //String csHash = saleOneTo();
@@ -73,7 +76,7 @@ public class GustoNftContractFlowASync {
         //addRent();
 
         //去除租赁人
-        removeRent();
+        //removeRent();
 
         //queryResult(csHash);
         //解析合约返回值
@@ -262,6 +265,79 @@ public class GustoNftContractFlowASync {
             return null;
         } else {
             System.out.println("mintMedia call error " + JSONObject.toJSONString(baseResp));
+            return null;
+        }
+    }
+
+    //调用Solidity合约
+    //合约方法签名  注意：1.中间不要带空格  2.只写参数类型,不要带参数名 如:uint256 a,uint256 b  3.参数类型填写争取  请不要填写如int  需要填写完整uint
+    /*
+      功能说明:铸造
+      输入参数:
+                _cid:uint256
+                _burnNum:uint256
+      事件:
+
+            BurnMedia(
+            _cid,
+            _totalSupply
+            );
+
+    */
+
+    public String burnMedia() throws Exception {
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.add(BigInteger.valueOf(3));
+        jsonArray.add(10);
+
+        String orderId = "order_" + System.currentTimeMillis();
+        CallRestBizParam callRestBizParam = CallRestBizParam.builder()
+                .orderId(orderId)
+                .bizid(restClientProperties.getBizid())
+                .account("gustoUser2")
+                .contractName(COMMODITY_CONTRACT_NAME)
+                .methodSignature("burnMedia(uint256,uint256)")
+                .inputParamListStr(jsonArray.toJSONString())
+                .outTypes("void")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
+                .method(Method.CALLCONTRACTBIZASYNC)
+                .tenantid(restClientProperties.getTenantid())
+                .gas(1000000L).build();
+        BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
+
+        System.out.println("burnMedia " + JSONObject.toJSONString(baseResp));
+        if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            String hash = baseResp.getData();
+            BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
+            String s = queryBaseResp.getData();
+
+            if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
+                ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
+
+                for (LogEntry log : transaction.getLogs()) {
+                    if (log.getLogData().length > 0) {
+
+                        //传入回执中的logdata转换为EVMoutput
+                        System.out.println("burnMedia query receipt successful " + JSONObject.toJSONString(baseResp));
+                        EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
+                        //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
+                        List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
+                                asList( "uint256", "uint256"));
+                        for (Object o : resultList) {
+                            System.out.println("burnMedia  param:" + o.toString());
+                        }
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("burnMedia query receipt error " + JSONObject.toJSONString(baseResp));
+                if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
+                    System.out.println("burnMedia  alread create media  " + JSONObject.toJSONString(queryBaseResp));
+                }
+            }
+            return null;
+        } else {
+            System.out.println("burnMedia call error " + JSONObject.toJSONString(baseResp));
             return null;
         }
     }
