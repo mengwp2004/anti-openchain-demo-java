@@ -43,11 +43,10 @@ public class GustoNftContractFlowASync {
     //private static final String CONTRACT_NAME = "gusto_bluesky_assert2"; // mengwp_2012账号　
     private static final String CONTRACT_NAME = "gustoUser2"; // mengwp_2012账号　
 
-    private static final String COMMODITY_CONTRACT_NAME = "media";
+    private static final String COMMODITY_CONTRACT_NAME = "media4";
     private static final String SUPPER_MARKET_CONTRACT_NAME = "mediaMarket1";
-    private static final String NFT_721_CONTRACT_NAME = "gustoNft";
+    private static final String NFT_721_CONTRACT_NAME = "gustoNft1";
     private static final String RENT_CONTRACT_NAME = "rent2";
-    private static final String NFT_CONTRACT_NAME = "gustoNft1";
 
     @Autowired
     private RestClient restClient;
@@ -61,11 +60,13 @@ public class GustoNftContractFlowASync {
         //String csHash = mintMedia();
 
         //注销，只有没有卖的nft才可以注销
-        burnMedia();
+        //burnMedia();
 
         //购买
         //String csHash = saleOneTo();
 
+        //token 转移
+        transferFrom();
         //查询指定账户的nft数目
         //String csHash = balanceOf();
 
@@ -280,6 +281,7 @@ public class GustoNftContractFlowASync {
 
             BurnMedia(
             _cid,
+            _burnNum,
             _totalSupply
             );
 
@@ -322,7 +324,7 @@ public class GustoNftContractFlowASync {
                         EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
                         //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
                         List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
-                                asList( "uint256", "uint256"));
+                                asList( "uint256", "uint256","uint256"));
                         for (Object o : resultList) {
                             System.out.println("burnMedia  param:" + o.toString());
                         }
@@ -354,7 +356,7 @@ public class GustoNftContractFlowASync {
    */
     public String saleOneTo() throws Exception {
         JSONArray jsonArray = new JSONArray();
-        jsonArray.add(BigInteger.valueOf(3));
+        jsonArray.add(BigInteger.valueOf(1));
         jsonArray.add(BigInteger.valueOf(1));
         jsonArray.add(new Identity("0bdaeaefe144a0eee2e11cf1030d7607a9c53abaf4606db55d3053029dd6bda9"));
 
@@ -417,6 +419,89 @@ public class GustoNftContractFlowASync {
             return null;
         } else {
             System.out.println("saleOneTo call error " + JSONObject.toJSONString(baseResp));
+            return null;
+        }
+
+    }
+
+
+    /*
+   功能说明:token转移
+   输入参数:
+              _from:identity
+              _to:identity
+              _tokenId:uint256
+   事件:
+              Transfer(from, _to, _tokenId);
+  */
+    public String transferFrom() throws Exception {
+        JSONArray jsonArray = new JSONArray();
+        //jsonArray.add(new Identity("4b61cd266a5d6ce40ddec2e43ef75c1aadc5cedb113da980802ebec4532d1e5f"));
+        jsonArray.add(new Identity("0bdaeaefe144a0eee2e11cf1030d7607a9c53abaf4606db55d3053029dd6bda9"));
+        jsonArray.add(new Identity("4b61cd266a5d6ce40ddec2e43ef75c1aadc5cedb113da980802ebec4532d1e5f"));
+        jsonArray.add(BigInteger.valueOf(1));
+        String orderId = "order_" + System.currentTimeMillis();
+        CallRestBizParam callRestBizParam = CallRestBizParam.builder()
+                .orderId(orderId)
+                .bizid(restClientProperties.getBizid())
+                .account("gustoUser2")
+                .contractName(NFT_721_CONTRACT_NAME)
+                .methodSignature("transferFrom(identity,identity,uint256)")
+                .inputParamListStr(jsonArray.toJSONString())
+                .outTypes("void")
+                .mykmsKeyId("Z6pJGriuKGPAQENO1625040533402")
+                .method(Method.CALLCONTRACTBIZASYNC)
+                .tenantid(restClientProperties.getTenantid())
+                .gas(1000000L).build();
+        BaseResp baseResp = restClient.chainCallForBiz(callRestBizParam);
+
+        /*
+        BaseResp baseResp = new BaseResp();
+        baseResp.setCode("200");
+        baseResp.setData("e2b08b023b53eb17d2c21b11daec1d1e66ff9d96848038b0cb3244819dceabb7");
+        baseResp.setSuccess(true);
+        */
+
+
+        System.out.println("transferFrom " + JSONObject.toJSONString(baseResp));
+        if (baseResp.getCode().compareToIgnoreCase("200") == 0) {
+            Thread.sleep(3000);
+            String hash = baseResp.getData();
+            BaseResp queryBaseResp = restClient.chainCall(hash, restClientProperties.getBizid(), "", Method.QUERYRECEIPT);
+            String s = queryBaseResp.getData();
+
+            if (queryBaseResp.getCode().compareToIgnoreCase("200") == 0) {
+                ReceiptDecoration transaction = JSON.parseObject(queryBaseResp.getData(), ReceiptDecoration.class);
+
+                Integer i = 0;
+                //LogEntry log = transaction.getLogs().get(1);
+                for (LogEntry log : transaction.getLogs()) {
+
+                    i++;
+                    if (log.getLogData().length > 0) {
+                    //if(i == 2){
+
+                        //传入回执中的logdata转换为EVMoutput
+                        System.out.println("transferFrom query receipt successful " + JSONObject.toJSONString(baseResp));
+                        EVMOutput logOutput = new EVMOutput(Hex.toHexString(log.getLogData()));
+                        //根据事件传入类型按顺序传值,如event test(string a,uint256 b); 则填写asList("string","uint256")
+                        List<Object> resultList = ContractParameterUtils.getEVMOutput(logOutput,
+                                asList( "identity", "identity","uint256"));
+                        for (Object o : resultList) {
+                            System.out.println("transferFrom param:" + o.toString());
+                        }
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("transferFrom query receipt error " + JSONObject.toJSONString(queryBaseResp));
+                if (queryBaseResp.getCode().compareToIgnoreCase("10201") == 0) {
+                    System.out.println("transferFrom  alread   " + JSONObject.toJSONString(queryBaseResp));
+                }
+            }
+            return null;
+        } else {
+            System.out.println("transferFrom call error " + JSONObject.toJSONString(baseResp));
             return null;
         }
 
